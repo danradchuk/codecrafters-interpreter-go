@@ -36,6 +36,22 @@ func (t TokenType) String() string {
 		"STRING",
 		"NUMBER",
 		"IDENTIFIER",
+		"AND",
+		"CLASS",
+		"ELSE",
+		"FALSE",
+		"FOR",
+		"FUN",
+		"IF",
+		"NIL",
+		"OR",
+		"PRINT",
+		"RETURN",
+		"SUPER",
+		"THIS",
+		"TRUE",
+		"VAR",
+		"WHILE",
 		"EOF",
 	}[t]
 }
@@ -63,6 +79,22 @@ const (
 	STRING
 	NUMBER
 	IDENTIFIER
+	AND
+	CLASS
+	ELSE
+	FALSE
+	FOR
+	FUN
+	IF
+	NIL
+	OR
+	PRINT
+	RETURN
+	SUPER
+	THIS
+	TRUE
+	VAR
+	WHILE
 	EOF
 )
 
@@ -111,6 +143,25 @@ func tokenType(c string) TokenType {
 	}
 
 	panic("unknown character")
+}
+
+var keywordToTokenType = map[string]TokenType{
+	"and":    AND,
+	"class":  CLASS,
+	"else":   ELSE,
+	"false":  FALSE,
+	"for":    FOR,
+	"fun":    FUN,
+	"if":     IF,
+	"nil":    NIL,
+	"or":     OR,
+	"print":  PRINT,
+	"return": RETURN,
+	"super":  SUPER,
+	"this":   THIS,
+	"true":   TRUE,
+	"var":    VAR,
+	"while":  WHILE,
 }
 
 type Token struct {
@@ -218,8 +269,11 @@ func lexify(input []byte) ([]Token, []error) {
 				}
 
 				ident := string(input[startPos:currPos])
-
-				tokens = append(tokens, Token{Type: IDENTIFIER, Lexeme: ident})
+				if k, ok := keywordToTokenType[ident]; ok {
+					tokens = append(tokens, Token{Type: k, Lexeme: ident})
+				} else {
+					tokens = append(tokens, Token{Type: IDENTIFIER, Lexeme: ident})
+				}
 			} else {
 				errs = append(errs, fmt.Errorf("[line %d] %w Unexpected character: %c", line+1, LexerError, ch))
 				currPos++
