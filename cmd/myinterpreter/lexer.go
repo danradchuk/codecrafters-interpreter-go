@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 )
 
-var LexerError = errors.New("Error: Unexpected character:")
+var LexerError = errors.New("Error:")
 
 type TokenType int
 
@@ -31,6 +32,7 @@ func (t TokenType) String() string {
 		"LESS_EQUAL",
 		"GREATER",
 		"GREATER_EQUAL",
+		"STRING",
 		"EOF",
 	}[t]
 }
@@ -55,6 +57,7 @@ const (
 	LESS_EQUAL
 	GREATER
 	GREATER_EQUAL
+	STRING
 	EOF
 )
 
@@ -156,8 +159,31 @@ func lexify(input []byte) ([]Token, []error) {
 			}
 			currPos++
 		default:
-			currPos++
-			errs = append(errs, fmt.Errorf("[line %d] %w %c", line+1, LexerError, ch))
+			if ch == '"' {
+				var sb strings.Builder
+				sb.WriteRune(ch)
+				currPos++
+
+				for currPos < len(input) {
+					ch := rune(input[currPos])
+					currPos++
+					sb.WriteRune(ch)
+					if ch == '"' {
+						break
+					}
+				}
+
+				str := sb.String()
+				if currPos == len(input) && !strings.HasSuffix(str, "\"") {
+					errs = append(errs, fmt.Errorf("[line %d] %w Unterminated string.", line+1, LexerError))
+				} else {
+					tokens = append(tokens, Token{Type: STRING, Lexeme: str, Literal: strings.Trim(str, "\"")})
+				}
+
+			} else {
+				errs = append(errs, fmt.Errorf("[line %d] %w Unexpected character: %c", line+1, LexerError, ch))
+				currPos++
+			}
 		}
 	}
 
