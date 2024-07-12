@@ -27,6 +27,10 @@ func (t TokenType) String() string {
 		"BANG_EQUAL",
 		"EQUAL_EQUAL",
 		"DIVISION",
+		"LESS",
+		"LESS_EQUAL",
+		"GREATER",
+		"GREATER_EQUAL",
 		"EOF",
 	}[t]
 }
@@ -47,6 +51,10 @@ const (
 	BANG_EQUAL
 	EQUAL_EQUAL
 	DIVISION
+	LESS
+	LESS_EQUAL
+	GREATER
+	GREATER_EQUAL
 	EOF
 )
 
@@ -65,7 +73,7 @@ func tokenType(c string) TokenType {
 	case "-":
 		return MINUS
 	case "/":
-		return STAR
+		return DIVISION
 	case ".":
 		return DOT
 	case ",":
@@ -82,6 +90,14 @@ func tokenType(c string) TokenType {
 		return EQUAL_EQUAL
 	case "*":
 		return STAR
+	case "<":
+		return LESS
+	case "<=":
+		return LESS_EQUAL
+	case ">":
+		return GREATER
+	case ">=":
+		return GREATER_EQUAL
 	case "EOF":
 		return EOF
 	}
@@ -130,7 +146,7 @@ func lexify(input []byte) ([]Token, []error) {
 				tokens = append(tokens, Token{Type: tokenType(string(ch)), Lexeme: string(ch)})
 			}
 			currPos++
-		case '!', '=':
+		case '!', '=', '<', '>':
 			if peek(input, currPos) == '=' {
 				l := string(ch) + string(rune(input[currPos+1]))
 				tokens = append(tokens, Token{Type: tokenType(l), Lexeme: l})
