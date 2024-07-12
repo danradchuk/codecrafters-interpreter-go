@@ -22,8 +22,8 @@ func (t TokenType) String() string {
 		"DOT",
 		"COMMA",
 		"SEMICOLON",
-		"EQ",
-		"DOUBLE_EQ",
+		"EQUAL",
+		"EQUAL_EQUAL",
 		"DIVISION",
 		"EOF",
 	}[t]
@@ -40,8 +40,8 @@ const (
 	DOT
 	COMMA
 	SEMICOLON
-	EQ
-	DOUBLE_EQ
+	EQUAL
+	EQUAL_EQUAL
 	DIVISION
 	EOF
 )
@@ -69,9 +69,9 @@ func tokenType(c string) TokenType {
 	case ";":
 		return SEMICOLON
 	case "=":
-		return EQ
+		return EQUAL
 	case "==":
-		return DOUBLE_EQ
+		return EQUAL_EQUAL
 	case "*":
 		return STAR
 	case "EOF":
@@ -96,8 +96,9 @@ func lexify(input []byte) ([]Token, []error) {
 		currPos int
 		line    int
 	)
+
 	for currPos < n {
-		ch := rune(input[currPos]) // TODO proper handling of UTF-8 symbols, for now assume that the input in ASCII encoding
+		ch := rune(input[currPos]) // TODO proper handling of UTF-8 symbols, for now assume that the input is in ASCII encoding
 
 		// skip whitespaces
 		if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
@@ -142,6 +143,10 @@ func lexify(input []byte) ([]Token, []error) {
 }
 
 func peek(input []byte, pos int) rune {
+	if pos >= len(input)-1 {
+		return 0
+	}
+
 	return rune(input[pos+1])
 }
 
