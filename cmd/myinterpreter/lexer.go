@@ -26,7 +26,7 @@ func (t TokenType) String() string {
 		"BANG",
 		"BANG_EQUAL",
 		"EQUAL_EQUAL",
-		"DIVISION",
+		"SLASH",
 		"LESS",
 		"LESS_EQUAL",
 		"GREATER",
@@ -50,7 +50,7 @@ const (
 	BANG
 	BANG_EQUAL
 	EQUAL_EQUAL
-	DIVISION
+	SLASH
 	LESS
 	LESS_EQUAL
 	GREATER
@@ -73,7 +73,7 @@ func tokenType(c string) TokenType {
 	case "-":
 		return MINUS
 	case "/":
-		return DIVISION
+		return SLASH
 	case ".":
 		return DOT
 	case ",":
@@ -182,6 +182,7 @@ func handleComment(input []byte, pos int) int {
 			break
 		}
 		ahead++
+		pos++
 	}
 
 	return ahead
