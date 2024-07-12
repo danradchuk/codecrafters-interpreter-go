@@ -23,6 +23,8 @@ func (t TokenType) String() string {
 		"COMMA",
 		"SEMICOLON",
 		"EQUAL",
+		"BANG",
+		"BANG_EQUAL",
 		"EQUAL_EQUAL",
 		"DIVISION",
 		"EOF",
@@ -41,6 +43,8 @@ const (
 	COMMA
 	SEMICOLON
 	EQUAL
+	BANG
+	BANG_EQUAL
 	EQUAL_EQUAL
 	DIVISION
 	EOF
@@ -70,6 +74,10 @@ func tokenType(c string) TokenType {
 		return SEMICOLON
 	case "=":
 		return EQUAL
+	case "!":
+		return BANG
+	case "!=":
+		return BANG_EQUAL
 	case "==":
 		return EQUAL_EQUAL
 	case "*":
@@ -113,20 +121,20 @@ func lexify(input []byte) ([]Token, []error) {
 		case '(', ')', '{', '}', '+', '-', '*', '.', ',', ';':
 			tokens = append(tokens, Token{Type: tokenType(string(ch)), Lexeme: string(ch)})
 			currPos++
-		case '=':
-			if peek(input, currPos) == '=' {
-				l := string(ch) + string(rune(input[currPos+1]))
-				tokens = append(tokens, Token{Type: tokenType(l), Lexeme: l})
-				currPos++
-			} else {
-				tokens = append(tokens, Token{Type: tokenType(string(ch)), Lexeme: string(ch)})
-			}
-			currPos++
 		case '/':
 			if peek(input, currPos) == '/' {
 				ahead := handleComment(input, currPos)
 				currPos += ahead
 				line++
+			} else {
+				tokens = append(tokens, Token{Type: tokenType(string(ch)), Lexeme: string(ch)})
+			}
+			currPos++
+		case '!', '=':
+			if peek(input, currPos) == '=' {
+				l := string(ch) + string(rune(input[currPos+1]))
+				tokens = append(tokens, Token{Type: tokenType(l), Lexeme: l})
+				currPos++
 			} else {
 				tokens = append(tokens, Token{Type: tokenType(string(ch)), Lexeme: string(ch)})
 			}
