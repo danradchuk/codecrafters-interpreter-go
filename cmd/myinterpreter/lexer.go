@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"unicode"
 )
 
 var LexerError = errors.New("Error:")
@@ -33,6 +35,7 @@ func (t TokenType) String() string {
 		"GREATER",
 		"GREATER_EQUAL",
 		"STRING",
+		"NUMBER",
 		"EOF",
 	}[t]
 }
@@ -58,6 +61,7 @@ const (
 	GREATER
 	GREATER_EQUAL
 	STRING
+	NUMBER
 	EOF
 )
 
@@ -141,7 +145,7 @@ func lexify(input []byte) ([]Token, []error) {
 			tokens = append(tokens, Token{Type: tokenType(string(ch)), Lexeme: string(ch)})
 			currPos++
 		case '/':
-			if peek(input, currPos) == '/' {
+			if peek(input, currPos+1) == '/' {
 				ahead := handleComment(input, currPos)
 				currPos += ahead
 				line++
@@ -150,7 +154,7 @@ func lexify(input []byte) ([]Token, []error) {
 			}
 			currPos++
 		case '!', '=', '<', '>':
-			if peek(input, currPos) == '=' {
+			if peek(input, currPos+1) == '=' {
 				l := string(ch) + string(rune(input[currPos+1]))
 				tokens = append(tokens, Token{Type: tokenType(l), Lexeme: l})
 				currPos++
@@ -160,26 +164,44 @@ func lexify(input []byte) ([]Token, []error) {
 			currPos++
 		default:
 			if ch == '"' {
-				var sb strings.Builder
-				sb.WriteRune(ch)
-				currPos++
-
-				for currPos < len(input) {
-					ch := rune(input[currPos])
+				currPos++ // consume the opening "
+				startPos := currPos
+				for currPos < len(input) && input[currPos] != '"' {
 					currPos++
-					sb.WriteRune(ch)
-					if ch == '"' {
-						break
+				}
+
+				if currPos < len(input) && input[currPos] == '"' {
+					str := string(input[startPos:currPos])
+					tokens = append(tokens, Token{Type: STRING, Lexeme: `"` + str + `"`, Literal: str})
+					currPos++ // consume the closing "
+				} else {
+					errs = append(errs, fmt.Errorf("[line %d] %w Unterminated string.", line+1, LexerError))
+				}
+			} else if unicode.IsDigit(ch) {
+				startPos := currPos
+				for unicode.IsDigit(peek(input, currPos)) {
+					currPos++
+				}
+
+				if peek(input, currPos) == '.' && unicode.IsDigit(peek(input, currPos+1)) {
+					currPos++ // consume '.'
+
+					for unicode.IsDigit(peek(input, currPos)) {
+						currPos++
 					}
 				}
 
-				str := sb.String()
-				if currPos == len(input) && !strings.HasSuffix(str, "\"") {
-					errs = append(errs, fmt.Errorf("[line %d] %w Unterminated string.", line+1, LexerError))
-				} else {
-					tokens = append(tokens, Token{Type: STRING, Lexeme: str, Literal: strings.Trim(str, "\"")})
+				// format number
+				number := string(input[startPos:currPos])
+				numLiter := number
+
+				numParts := strings.SplitN(number, ".", 2)
+				if len(numParts) != 2 {
+					num, _ := strconv.ParseFloat(number, 64)
+					numLiter = fmt.Sprintf("%.1f", num)
 				}
 
+				tokens = append(tokens, Token{Type: NUMBER, Lexeme: number, Literal: numLiter})
 			} else {
 				errs = append(errs, fmt.Errorf("[line %d] %w Unexpected character: %c", line+1, LexerError, ch))
 				currPos++
@@ -193,11 +215,11 @@ func lexify(input []byte) ([]Token, []error) {
 }
 
 func peek(input []byte, pos int) rune {
-	if pos >= len(input)-1 {
+	if pos >= len(input) {
 		return 0
 	}
 
-	return rune(input[pos+1])
+	return rune(input[pos])
 }
 
 func handleComment(input []byte, pos int) int {
