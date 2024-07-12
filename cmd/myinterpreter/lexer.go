@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"unicode"
 )
@@ -36,6 +35,7 @@ func (t TokenType) String() string {
 		"GREATER_EQUAL",
 		"STRING",
 		"NUMBER",
+		"IDENTIFIER",
 		"EOF",
 	}[t]
 }
@@ -62,6 +62,7 @@ const (
 	GREATER_EQUAL
 	STRING
 	NUMBER
+	IDENTIFIER
 	EOF
 )
 
@@ -191,17 +192,34 @@ func lexify(input []byte) ([]Token, []error) {
 					}
 				}
 
-				// format number
 				number := string(input[startPos:currPos])
-				numLiter := number
+				// 1234. -> 1234.0
+				// 200.00 -> 200.0
+				// 100.15 -> 100.15 (UNCHANGED)
+				trailZeroes := func(s string) string {
+					if strings.Contains(s, ".") {
+						s = strings.TrimRight(s, "0")
+						s = strings.TrimRight(s, ".")
+					}
 
-				numParts := strings.SplitN(number, ".", 2)
-				if len(numParts) != 2 {
-					num, _ := strconv.ParseFloat(number, 64)
-					numLiter = fmt.Sprintf("%.1f", num)
+					if !strings.Contains(s, ".") {
+						s += ".0"
+					}
+
+					return s
 				}
+				numLiter := trailZeroes(number)
 
 				tokens = append(tokens, Token{Type: NUMBER, Lexeme: number, Literal: numLiter})
+			} else if isAlphaNumeric(ch) {
+				startPos := currPos
+				for isAlphaNumeric(peek(input, currPos)) {
+					currPos++
+				}
+
+				ident := string(input[startPos:currPos])
+
+				tokens = append(tokens, Token{Type: IDENTIFIER, Lexeme: ident})
 			} else {
 				errs = append(errs, fmt.Errorf("[line %d] %w Unexpected character: %c", line+1, LexerError, ch))
 				currPos++
@@ -212,6 +230,10 @@ func lexify(input []byte) ([]Token, []error) {
 	tokens = append(tokens, Token{Type: tokenType("EOF")})
 
 	return tokens, errs
+}
+
+func isAlphaNumeric(ch rune) bool {
+	return unicode.IsLetter(ch) || unicode.IsDigit(ch) || ch == '_'
 }
 
 func peek(input []byte, pos int) rune {
