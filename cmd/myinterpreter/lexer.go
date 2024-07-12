@@ -5,47 +5,71 @@ import "fmt"
 type TokenType int
 
 func (t TokenType) String() string {
-	return [...]string{"LEFT_PAREN", "RIGHT_PAREN", "LEFT_BRACE", "RIGHT_BRACE", "PLUS", "MINUS", "ASTERISK", "EQ", "DOUBLE_EQ", "DIVISION", "EOF"}[t]
+	return [...]string{
+		"LEFT_PAREN",
+		"RIGHT_PAREN",
+		"LEFT_BRACE",
+		"RIGHT_BRACE",
+		"PLUS",
+		"MINUS",
+		"STAR",
+		"DOT",
+		"COMMA",
+		"SEMICOLON",
+		"EQ",
+		"DOUBLE_EQ",
+		"DIVISION",
+		"EOF",
+	}[t]
 }
 
-/*const (
+const (
 	LEFT_PAREN TokenType = iota
 	RIGHT_PAREN
 	LEFT_BRACE
 	RIGHT_BRACE
 	PLUS
 	MINUS
-	ASTERISK
+	STAR
+	DOT
+	COMMA
+	SEMICOLON
 	EQ
 	DOUBLE_EQ
 	DIVISION
 	EOF
-)*/
+)
 
 func tokenType(c string) TokenType {
 	switch c {
 	case "(":
-		return 0
+		return LEFT_PAREN
 	case ")":
-		return 1
+		return RIGHT_PAREN
 	case "{":
-		return 2
+		return LEFT_BRACE
 	case "}":
-		return 3
+		return RIGHT_BRACE
 	case "+":
-		return 4
+		return PLUS
 	case "-":
-		return 5
+		return MINUS
 	case "/":
-		return 6
+		return STAR
+	case ".":
+		return DOT
+	case ",":
+		return COMMA
+	case ";":
+		return SEMICOLON
 	case "=":
-		return 7
+		return EQ
 	case "==":
-		return 8
+		return DOUBLE_EQ
 	case "*":
-		return 9
+		return STAR
 	case "EOF":
-		return 10
+		return EOF
 	}
 
 	panic("unknown character")
@@ -74,7 +98,7 @@ func lexify(input []byte) ([]Token, error) {
 		}
 
 		switch ch {
-		case '(', ')', '{', '}', '+', '-', '*':
+		case '(', ')', '{', '}', '+', '-', '*', '.', ',', ';':
 			tokens = append(tokens, Token{Type: tokenType(string(ch)), Lexeme: string(ch)})
 			currPos++
 		case '=':
