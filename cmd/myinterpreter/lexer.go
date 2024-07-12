@@ -181,7 +181,7 @@ func lexify(input []byte) ([]Token, []error) {
 	)
 
 	for currPos < n {
-		ch := rune(input[currPos]) // TODO proper handling of UTF-8 symbols, for now assume that the input is in ASCII encoding
+		ch := rune(input[currPos]) // TODO proper handling of UTF-8 characters, assuming the input is currently encoded in ASCII
 
 		// skip whitespaces
 		if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
