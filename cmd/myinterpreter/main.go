@@ -30,10 +30,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	tokens, err := lexify(fileContents)
-	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error lexifying the input: %v\n", err)
-		os.Exit(1)
-	}
+	tokens, errors := lexify(fileContents)
 	printTokens(tokens)
+	if len(errors) > 0 {
+		code := processErrors(errors)
+		os.Exit(code)
+	}
 }

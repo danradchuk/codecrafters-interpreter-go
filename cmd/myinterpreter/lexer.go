@@ -1,6 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"os"
+)
+
+var LexerError = errors.New("Error: Unexpected character:")
 
 type TokenType int
 
@@ -81,12 +87,14 @@ type Token struct {
 	Literal string
 }
 
-func lexify(input []byte) ([]Token, error) {
+func lexify(input []byte) ([]Token, []error) {
 	n := len(input)
 
 	var (
 		tokens  []Token
+		errs    []error
 		currPos int
+		line    int
 	)
 	for currPos < n {
 		ch := rune(input[currPos]) // TODO proper handling of UTF-8 symbols, for now assume that the input in ASCII encoding
@@ -94,6 +102,9 @@ func lexify(input []byte) ([]Token, error) {
 		// skip whitespaces
 		if ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r' {
 			currPos++
+			if ch == '\n' || ch == '\r' {
+				line++
+			}
 			continue
 		}
 
@@ -112,23 +123,22 @@ func lexify(input []byte) ([]Token, error) {
 			currPos++
 		case '/':
 			if peek(input, currPos) == '/' {
-				// handle comment
-				// read until /n or /r or /r/n
-				// advance the position on the count of the skipped symbols
 				ahead := handleComment(input, currPos)
 				currPos += ahead
+				line++
 			} else {
 				tokens = append(tokens, Token{Type: tokenType(string(ch)), Lexeme: string(ch)})
 			}
 			currPos++
 		default:
 			currPos++
+			errs = append(errs, fmt.Errorf("[line %d] %w %c", line+1, LexerError, ch))
 		}
 	}
 
 	tokens = append(tokens, Token{Type: tokenType("EOF")})
 
-	return tokens, nil
+	return tokens, errs
 }
 
 func peek(input []byte, pos int) rune {
@@ -156,8 +166,25 @@ func printTokens(tokens []Token) {
 			return s
 		}
 	}
-
 	for _, tok := range tokens {
 		fmt.Printf("%s %s %s\n", tok.Type, tok.Lexeme, handleLiteral(tok.Literal))
 	}
+}
+
+func processErrors(errs []error) int {
+	var isLexerErr = false
+	for _, err := range errs {
+		if errors.Is(err, LexerError) {
+			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
+			isLexerErr = true
+		} else {
+			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
+		}
+	}
+
+	if isLexerErr {
+		return 65
+	}
+
+	return 1
 }
