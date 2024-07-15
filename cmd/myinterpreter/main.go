@@ -6,7 +6,6 @@ import (
 )
 
 func main() {
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	_, _ = fmt.Fprintln(os.Stderr, "Logs from your program will appear here!")
 
 	if len(os.Args) < 3 {
@@ -15,13 +14,10 @@ func main() {
 	}
 
 	command := os.Args[1]
-
 	if command != "tokenize" {
 		_, _ = fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		os.Exit(1)
 	}
-
-	// Uncomment this block to pass the first stage
 
 	filename := os.Args[2]
 	fileContents, err := os.ReadFile(filename)
@@ -30,7 +26,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	tokens, errors := lexify(fileContents)
+	l := &Lexer{Input: fileContents, CurrLine: 1}
+	tokens, errors := l.Tokens()
 	printTokens(tokens)
 	if len(errors) > 0 {
 		code := processErrors(errors)
