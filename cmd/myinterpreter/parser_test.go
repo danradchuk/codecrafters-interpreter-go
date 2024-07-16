@@ -87,6 +87,20 @@ func TestParser_Parse(t *testing.T) {
 				},
 			},
 		},
+		{"parseEquality", args{0, "\"foo\" == \"foo\""},
+			InfixExpr{
+				Token: Token{EQUAL_EQUAL, "==", ""},
+				Left: StringLiteral{
+					Token: Token{STRING, "\"foo\"", "foo"},
+					Value: "foo",
+				},
+				Op: "==",
+				Right: StringLiteral{
+					Token: Token{STRING, "\"foo\"", "foo"},
+					Value: "foo",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

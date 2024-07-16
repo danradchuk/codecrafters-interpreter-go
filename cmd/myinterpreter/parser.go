@@ -20,7 +20,7 @@ const (
 )
 
 var tokenTypeToBp = map[TokenType]int{
-	EQUAL:         EQUALITY,
+	EQUAL_EQUAL:   EQUALITY,
 	BANG_EQUAL:    EQUALITY,
 	GREATER:       COMPARISON,
 	GREATER_EQUAL: COMPARISON,
