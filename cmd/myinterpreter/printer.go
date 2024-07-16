@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"strings"
 )
 
 type ASTPrinter struct {
@@ -46,4 +47,17 @@ func (v *ASTPrinter) write(s string) {
 		return
 	}
 	_, v.err = v.w.Write([]byte(s))
+}
+
+func trailZeroes(s string) string {
+	if strings.Contains(s, ".") {
+		s = strings.TrimRight(s, "0")
+		s = strings.TrimRight(s, ".")
+	}
+
+	if !strings.Contains(s, ".") {
+		s += ".0"
+	}
+
+	return s
 }

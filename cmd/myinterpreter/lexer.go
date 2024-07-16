@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"unicode"
 )
 
@@ -239,21 +238,8 @@ func (l *Lexer) NextToken() Token {
 			// 1234. -> 1234.0
 			// 200.00 -> 200.0
 			// 100.15 -> 100.15 (UNCHANGED)
-			trailZeroes := func(s string) string {
-				if strings.Contains(s, ".") {
-					s = strings.TrimRight(s, "0")
-					s = strings.TrimRight(s, ".")
-				}
 
-				if !strings.Contains(s, ".") {
-					s += ".0"
-				}
-
-				return s
-			}
-			numLiter := trailZeroes(number)
-
-			token = Token{Type: NUMBER, Lexeme: number, Literal: numLiter}
+			token = Token{Type: NUMBER, Lexeme: number, Literal: trailZeroes(number)}
 			return token
 		} else if isAlphaNumeric(l.char) {
 			ident := l.readIdentifier()

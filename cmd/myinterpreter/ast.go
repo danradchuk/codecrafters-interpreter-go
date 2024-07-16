@@ -50,7 +50,9 @@ type NumLiteral struct {
 func (n NumLiteral) Type() string {
 	return "NUMBER"
 }
-func (n NumLiteral) String() string         { return fmt.Sprintf("%f", n.Value) }
+func (n NumLiteral) String() string {
+	return trailZeroes(fmt.Sprintf("%f", n.Value))
+}
 func (n NumLiteral) Accept(visitor Visitor) { visitor.VisitNum(n) }
 
 type StringLiteral struct {
