@@ -171,6 +171,7 @@ type Token struct {
 	Type    TokenType
 	Lexeme  string
 	Literal string
+	Line    int
 }
 
 type Lexer struct {
@@ -199,7 +200,7 @@ func (l *Lexer) NextToken() Token {
 
 	switch l.char {
 	case '(', ')', '{', '}', '+', '-', '*', '.', ',', ';':
-		token = Token{Type: tokenType(string(l.char)), Lexeme: string(l.char)}
+		token = Token{Type: tokenType(string(l.char)), Lexeme: string(l.char), Line: l.currLine}
 	case '/':
 		if l.peek() == '/' {
 			for l.char != '\n' && l.char != '\r' && l.char != 0 {
@@ -210,16 +211,16 @@ func (l *Lexer) NextToken() Token {
 			}
 			token = Token{Type: COMMENT}
 		} else {
-			token = Token{Type: tokenType(string(l.char)), Lexeme: string(l.char)}
+			token = Token{Type: tokenType(string(l.char)), Lexeme: string(l.char), Line: l.currLine}
 		}
 	case '!', '=', '<', '>':
 		if l.peek() == '=' {
 			ch := l.char
 			l.readChar()
-			l := string(ch) + string(l.char)
-			token = Token{Type: tokenType(l), Lexeme: l}
+			lex := string(ch) + string(l.char)
+			token = Token{Type: tokenType(lex), Lexeme: lex, Line: l.currLine}
 		} else {
-			token = Token{Type: tokenType(string(l.char)), Lexeme: string(l.char)}
+			token = Token{Type: tokenType(string(l.char)), Lexeme: string(l.char), Line: l.currLine}
 		}
 	case '"':
 		str := l.readString()
@@ -227,7 +228,7 @@ func (l *Lexer) NextToken() Token {
 			l.errs = append(l.errs, fmt.Errorf("[line %d] %w Unterminated string.", l.currLine, LexerError))
 			token = Token{Type: ERROR, Lexeme: string(l.char)}
 		} else {
-			token = Token{Type: STRING, Lexeme: `"` + str + `"`, Literal: str}
+			token = Token{Type: STRING, Lexeme: `"` + str + `"`, Literal: str, Line: l.currLine}
 		}
 	case 0:
 		token = Token{Type: tokenType("EOF")}
@@ -239,14 +240,14 @@ func (l *Lexer) NextToken() Token {
 			// 200.00 -> 200.0
 			// 100.15 -> 100.15 (UNCHANGED)
 
-			token = Token{Type: NUMBER, Lexeme: number, Literal: trailZeroes(number)}
+			token = Token{Type: NUMBER, Lexeme: number, Literal: trailZeroes(number), Line: l.currLine}
 			return token
 		} else if isAlphaNumeric(l.char) {
 			ident := l.readIdentifier()
 			if tok, ok := keywordToTokenType[ident]; ok {
-				token = Token{Type: tok, Lexeme: ident}
+				token = Token{Type: tok, Lexeme: ident, Line: l.currLine}
 			} else {
-				token = Token{Type: IDENTIFIER, Lexeme: ident}
+				token = Token{Type: IDENTIFIER, Lexeme: ident, Line: l.currLine}
 			}
 			return token
 		} else {

@@ -15,13 +15,13 @@ func TestLexer_Tokens(t *testing.T) {
 		args args
 		want []Token
 	}{
-		{"scanOps", args{"<"}, []Token{{Type: LESS, Lexeme: "<"}, {Type: EOF}}},
+		{"scanOps", args{"<"}, []Token{{Type: LESS, Lexeme: "<", Line: 1}, {Type: EOF}}},
 		{"scanOps", args{"2+2=4"}, []Token{
-			{Type: NUMBER, Lexeme: "2", Literal: "2.0"},
-			{Type: PLUS, Lexeme: "+"},
-			{Type: NUMBER, Lexeme: "2", Literal: "2.0"},
-			{Type: EQUAL, Lexeme: "="},
-			{Type: NUMBER, Lexeme: "4", Literal: "4.0"},
+			{Type: NUMBER, Lexeme: "2", Literal: "2.0", Line: 1},
+			{Type: PLUS, Lexeme: "+", Line: 1},
+			{Type: NUMBER, Lexeme: "2", Literal: "2.0", Line: 1},
+			{Type: EQUAL, Lexeme: "=", Line: 1},
+			{Type: NUMBER, Lexeme: "4", Literal: "4.0", Line: 1},
 			{Type: EOF},
 		}},
 	}

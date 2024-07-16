@@ -82,7 +82,7 @@ func NewParser(lexer *Lexer) *Parser {
 func (p *Parser) ParseExpr(minBp int) ASTNode {
 	prefixFunc := p.prefixOps[p.currToken.Type]
 	if prefixFunc == nil {
-		// TODO add error
+		p.errs = append(p.errs, fmt.Errorf("[line %d] Error at '%s': Expect expression.", p.currToken.Line, p.currToken.Lexeme))
 		return nil
 	}
 
