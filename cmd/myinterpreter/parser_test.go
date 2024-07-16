@@ -52,6 +52,41 @@ func TestParser_Parse(t *testing.T) {
 				},
 			},
 		},
+		{"parseInfixExpr", args{0, "-(-58 + 68) * (40 * 40) / (72 + 39)"},
+			InfixExpr{
+				Token{PLUS, "/", ""},
+				InfixExpr{
+					Token: Token{STAR, "*", ""},
+					Left: PrefixExpr{
+						Token: Token{MINUS, "-", ""},
+						Op:    "-",
+						Right: InfixExpr{
+							Token: Token{PLUS, "+", ""},
+							Left:  NumLiteral{Token{NUMBER, "58", "58.0"}, 58.},
+							Op:    "+",
+							Right: NumLiteral{Token{NUMBER, "68", "68.0"}, 68.},
+						},
+					},
+					Op: "*",
+					Right: InfixExpr{
+						Token: Token{STAR, "*", ""},
+						Left:  NumLiteral{Token{NUMBER, "40", "40.0"}, 40.},
+						Op:    "*",
+						Right: NumLiteral{Token{NUMBER, "40", "40.0"}, 40.},
+					},
+				},
+				"/",
+				GroupedExpr{
+					Token: Token{LEFT_PAREN, "(", ""},
+					Value: InfixExpr{
+						Token: Token{STAR, "+", ""},
+						Left:  NumLiteral{Token{NUMBER, "72", "72.0"}, 72.},
+						Op:    "+",
+						Right: NumLiteral{Token{NUMBER, "39", "39.0"}, 39.},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -162,6 +162,8 @@ func (p *Parser) parseGroupedExpr() ASTNode {
 	if p.peekToken.Type != RIGHT_PAREN {
 		p.errs = append(p.errs, fmt.Errorf("Error: Unmatched parentheses."))
 		return nil
+	} else {
+		p.nextToken()
 	}
 	expr.Value = exp
 
