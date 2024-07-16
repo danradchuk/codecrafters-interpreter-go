@@ -52,6 +52,8 @@ func (t TokenType) String() string {
 		"TRUE",
 		"VAR",
 		"WHILE",
+		"COMMENT",
+		"ERROR",
 		"EOF",
 	}[t]
 }
@@ -95,6 +97,8 @@ const (
 	TRUE
 	VAR
 	WHILE
+	COMMENT
+	ERROR
 	EOF
 )
 
@@ -171,113 +175,66 @@ type Token struct {
 }
 
 type Lexer struct {
-	Input    []byte
-	CurrLine int
-	CurrPos  int
-	ReadPos  int
-	Char     rune // Char instead of ch because in Go that usually means channels
+	input    []byte
+	errs     []error
+	currLine int
+	currPos  int
+	readPos  int
+	char     rune
 }
 
-// Peek observes the next token to consume without advancing to it
-func (l *Lexer) Peek() rune {
-	if l.ReadPos >= len(l.Input) {
-		return 0
+func NewLexer(input []byte) *Lexer {
+	l := &Lexer{
+		input:    input,
+		currLine: 1,
 	}
+	l.readChar() // advance cursor to the first position
 
-	return rune(l.Input[l.ReadPos])
+	return l
 }
-func (l *Lexer) skipWhitespaces() {
-	for l.Char == ' ' || l.Char == '\t' || l.Char == '\n' || l.Char == '\r' {
-		l.CurrPos++
-		if l.Char == '\n' || l.Char == '\r' {
-			l.CurrLine++
-		}
-	}
-}
-func (l *Lexer) ReadChar() {
-	if l.ReadPos >= len(l.Input) {
-		l.Char = 0
-	} else {
-		l.Char = rune(l.Input[l.ReadPos])
-	}
-	l.CurrPos = l.ReadPos
-	l.ReadPos++
-}
-func (l *Lexer) ReadString() string {
-	startPos := l.CurrPos + 1
-	for {
-		l.ReadChar()
-		if l.Char == 0 || l.Char == '"' {
-			break
-		}
-	}
-	str := string(l.Input[startPos:l.CurrPos])
-	return str
-}
-func (l *Lexer) ReadNumber() string {
-	startPos := l.CurrPos
-	for unicode.IsDigit(l.Char) {
-		l.ReadChar()
-	}
 
-	if l.Char == '.' && unicode.IsDigit(l.Peek()) {
-		l.ReadChar() // consume '.'
-
-		for unicode.IsDigit(l.Char) {
-			l.ReadChar()
-		}
-	}
-
-	return string(l.Input[startPos:l.CurrPos])
-}
-func (l *Lexer) ReadIdentifier() string {
-	startPos := l.CurrPos
-	for isAlphaNumeric(l.Char) {
-		l.ReadChar()
-	}
-
-	return string(l.Input[startPos:l.CurrPos])
-}
-func (l *Lexer) NextToken() (*Token, error) {
-	var token *Token
-	var err error
+func (l *Lexer) NextToken() Token {
+	var token Token
 
 	l.skipWhitespaces()
 
-	switch l.Char {
+	switch l.char {
 	case '(', ')', '{', '}', '+', '-', '*', '.', ',', ';':
-		token = &Token{Type: tokenType(string(l.Char)), Lexeme: string(l.Char)}
+		token = Token{Type: tokenType(string(l.char)), Lexeme: string(l.char)}
 	case '/':
-		if l.Peek() == '/' {
-			l.ReadChar()
-			for l.Char != '\n' && l.Char != '\r' && l.Char != 0 {
-				l.ReadChar()
+		if l.peek() == '/' {
+			for l.char != '\n' && l.char != '\r' && l.char != 0 {
+				l.readChar()
 			}
-			l.CurrLine++
+			if l.char == '\n' || l.char == '\r' {
+				l.currLine++
+			}
+			token = Token{Type: COMMENT}
 		} else {
-			token = &Token{Type: tokenType(string(l.Char)), Lexeme: string(l.Char)}
+			token = Token{Type: tokenType(string(l.char)), Lexeme: string(l.char)}
 		}
 	case '!', '=', '<', '>':
-		if l.Peek() == '=' {
-			ch := l.Char
-			l.ReadChar()
-			l := string(ch) + string(l.Char)
-			token = &Token{Type: tokenType(l), Lexeme: l}
+		if l.peek() == '=' {
+			ch := l.char
+			l.readChar()
+			l := string(ch) + string(l.char)
+			token = Token{Type: tokenType(l), Lexeme: l}
 		} else {
-			token = &Token{Type: tokenType(string(l.Char)), Lexeme: string(l.Char)}
+			token = Token{Type: tokenType(string(l.char)), Lexeme: string(l.char)}
 		}
 	case '"':
-		str := l.ReadString()
-		if l.Char == 0 { // EOF
-			err = fmt.Errorf("[line %d] %w Unterminated string.", l.CurrLine, LexerError)
+		str := l.readString()
+		if l.char == 0 { // EOF
+			l.errs = append(l.errs, fmt.Errorf("[line %d] %w Unterminated string.", l.currLine, LexerError))
+			token = Token{Type: ERROR, Lexeme: string(l.char)}
 		} else {
-			token = &Token{Type: STRING, Lexeme: `"` + str + `"`, Literal: str}
+			token = Token{Type: STRING, Lexeme: `"` + str + `"`, Literal: str}
 		}
 	case 0:
-		return &Token{Type: tokenType("EOF")}, nil
+		token = Token{Type: tokenType("EOF")}
 	default:
-		if unicode.IsDigit(l.Char) {
-			number := l.ReadNumber()
+		if unicode.IsDigit(l.char) {
+			number := l.readNumber()
 
 			// 1234. -> 1234.0
 			// 200.00 -> 200.0
@@ -296,39 +253,31 @@ func (l *Lexer) NextToken() (*Token, error) {
 			}
 			numLiter := trailZeroes(number)
 
-			token = &Token{Type: NUMBER, Lexeme: number, Literal: numLiter}
-		} else if isAlphaNumeric(l.Char) {
-			ident := l.ReadIdentifier()
+			token = Token{Type: NUMBER, Lexeme: number, Literal: numLiter}
+			return token
+		} else if isAlphaNumeric(l.char) {
+			ident := l.readIdentifier()
 			if tok, ok := keywordToTokenType[ident]; ok {
-				token = &Token{Type: tok, Lexeme: ident}
+				token = Token{Type: tok, Lexeme: ident}
 			} else {
-				token = &Token{Type: IDENTIFIER, Lexeme: ident}
+				token = Token{Type: IDENTIFIER, Lexeme: ident}
 			}
+			return token
 		} else {
-			err = fmt.Errorf("[line %d] %w Unexpected character: %c", l.CurrLine, LexerError, l.Char)
+			l.errs = append(l.errs, fmt.Errorf("[line %d] %w Unexpected character: %c", l.currLine, LexerError, l.char))
+			token = Token{Type: ERROR, Lexeme: string(l.char)}
 		}
 	}
 
-	l.ReadChar() // consume next token
+	l.readChar() // consume next token
 
-	return token, err
+	return token
 }
-func (l *Lexer) Tokens() ([]*Token, []error) {
-	var tokens []*Token
-	var errs []error
-
-	l.ReadChar() // advance the first position
-
-	for {
-		t, err := l.NextToken()
-		if err != nil {
-			errs = append(errs, err)
-		}
-
-		if t != nil {
+func (l *Lexer) Tokens() []Token {
+	var tokens []Token
+	for t := l.NextToken(); ; t = l.NextToken() {
+		if t.Type != COMMENT && t.Type != ERROR {
 			tokens = append(tokens, t)
-		} else {
-			continue
 		}
 
 		if t.Type == EOF {
@@ -336,13 +285,74 @@ func (l *Lexer) Tokens() ([]*Token, []error) {
 		}
 	}
 
-	return tokens, errs
+	return tokens
+}
+
+func (l *Lexer) peek() rune {
+	if l.readPos >= len(l.input) {
+		return 0
+	}
+
+	return rune(l.input[l.readPos])
+}
+func (l *Lexer) skipWhitespaces() {
+	for l.char == ' ' || l.char == '\t' || l.char == '\n' || l.char == '\r' {
+		if l.char == '\n' || l.char == '\r' {
+			l.currLine++
+		}
+		l.readChar()
+	}
+}
+func (l *Lexer) readChar() {
+	if l.readPos >= len(l.input) {
+		l.char = 0
+	} else {
+		l.char = rune(l.input[l.readPos])
+	}
+	l.currPos = l.readPos
+	l.readPos++
+}
+func (l *Lexer) readString() string {
+	startPos := l.currPos + 1
+	for {
+		l.readChar()
+		if l.char == 0 || l.char == '"' {
+			break
+		}
+	}
+	str := string(l.input[startPos:l.currPos])
+
+	return str
+}
+func (l *Lexer) readNumber() string {
+	startPos := l.currPos
+	for unicode.IsDigit(l.char) {
+		l.readChar()
+	}
+
+	if l.char == '.' && unicode.IsDigit(l.peek()) {
+		l.readChar() // consume '.'
+
+		for unicode.IsDigit(l.char) {
+			l.readChar()
+		}
+	}
+
+	return string(l.input[startPos:l.currPos])
+}
+func (l *Lexer) readIdentifier() string {
+	startPos := l.currPos
+	for isAlphaNumeric(l.char) {
+		l.readChar()
+	}
+
+	return string(l.input[startPos:l.currPos])
 }
 
 func isAlphaNumeric(ch rune) bool {
 	return unicode.IsLetter(ch) || unicode.IsDigit(ch) || ch == '_'
 }
-func printTokens(tokens []*Token) {
+func PrintTokens(tokens []Token) {
 	handleLiteral := func(s string) string {
 		if s == "" {
 			return "null"
@@ -354,7 +364,7 @@ func printTokens(tokens []*Token) {
 		fmt.Printf("%s %s %s\n", tok.Type, tok.Lexeme, handleLiteral(tok.Literal))
 	}
 }
-func processErrors(errs []error) int {
+func CheckLexerErrors(errs []error) int {
 	var isLexerErr = false
 	for _, err := range errs {
 		if errors.Is(err, LexerError) {
