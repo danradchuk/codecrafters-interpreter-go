@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/codecrafters-io/interpreter-starter-go/cmd/myinterpreter/lexer"
+	"github.com/codecrafters-io/interpreter-starter-go/cmd/myinterpreter/parser"
 )
 
 func main() {
@@ -25,28 +28,26 @@ func main() {
 	}
 
 	if command == "tokenize" {
-		l := NewLexer(fileContents)
+		l := lexer.NewLexer(fileContents)
 		tokens := l.Tokens()
-		PrintTokens(tokens)
-		if len(l.errs) > 0 {
-			code := CheckLexerErrors(l.errs)
+		lexer.PrintTokens(tokens)
+		if len(l.Errors) > 0 {
+			code := lexer.CheckErrors(l.Errors)
 			os.Exit(code)
 		}
-	} else {
+	} else if command == "parse" {
 		// Tokenize
-		l := NewLexer(fileContents)
+		l := lexer.NewLexer(fileContents)
 
 		// Parse
-		p := NewParser(l)
-		ast := p.ParseExpr(LOWEST)
-		if len(p.errs) > 0 {
-			code := CheckParserErrors(p.errs)
+		p := parser.NewParser(l)
+		ast := p.ParseExpr(parser.LOWEST)
+		if len(p.Errors) > 0 {
+			code := parser.CheckErrors(p.Errors)
 			os.Exit(code)
 		}
 
 		// Print
 		fmt.Println(ast.String())
-		//printer := ASTPrinter{w: os.Stdout}
-		//printer.Print(ast)
 	}
 }

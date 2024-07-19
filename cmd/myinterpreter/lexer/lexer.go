@@ -1,9 +1,10 @@
-package main
+package lexer
 
 import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"unicode"
 )
 
@@ -175,8 +176,8 @@ type Token struct {
 }
 
 type Lexer struct {
+	Errors   []error
 	input    []byte
-	errs     []error
 	currLine int
 	currPos  int
 	readPos  int
@@ -225,7 +226,7 @@ func (l *Lexer) NextToken() Token {
 	case '"':
 		str := l.readString()
 		if l.char == 0 { // EOF
-			l.errs = append(l.errs, fmt.Errorf("[line %d] %w Unterminated string.", l.currLine, LexerError))
+			l.Errors = append(l.Errors, fmt.Errorf("[line %d] %w Unterminated string.", l.currLine, LexerError))
 			token = Token{Type: ERROR, Lexeme: string(l.char)}
 		} else {
 			token = Token{Type: STRING, Lexeme: `"` + str + `"`, Literal: str, Line: l.currLine}
@@ -235,11 +236,6 @@ func (l *Lexer) NextToken() Token {
 	default:
 		if unicode.IsDigit(l.char) {
 			number := l.readNumber()
-
-			// 1234. -> 1234.0
-			// 200.00 -> 200.0
-			// 100.15 -> 100.15 (UNCHANGED)
-
 			token = Token{Type: NUMBER, Lexeme: number, Literal: trailZeroes(number), Line: l.currLine}
 			return token
 		} else if isAlphaNumeric(l.char) {
@@ -251,7 +247,7 @@ func (l *Lexer) NextToken() Token {
 			}
 			return token
 		} else {
-			l.errs = append(l.errs, fmt.Errorf("[line %d] %w Unexpected character: %c", l.currLine, LexerError, l.char))
+			l.Errors = append(l.Errors, fmt.Errorf("[line %d] %w Unexpected character: %c", l.currLine, LexerError, l.char))
 			token = Token{Type: ERROR, Lexeme: string(l.char)}
 		}
 	}
@@ -351,7 +347,7 @@ func PrintTokens(tokens []Token) {
 		fmt.Printf("%s %s %s\n", tok.Type, tok.Lexeme, handleLiteral(tok.Literal))
 	}
 }
-func CheckLexerErrors(errs []error) int {
+func CheckErrors(errs []error) int {
 	var isLexerErr = false
 	for _, err := range errs {
 		if errors.Is(err, LexerError) {
@@ -367,4 +363,16 @@ func CheckLexerErrors(errs []error) int {
 	}
 
 	return 1
+}
+func trailZeroes(s string) string {
+	if strings.Contains(s, ".") {
+		s = strings.TrimRight(s, "0")
+		s = strings.TrimRight(s, ".")
+	}
+
+	if !strings.Contains(s, ".") {
+		s += ".0"
+	}
+
+	return s
 }

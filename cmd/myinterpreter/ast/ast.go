@@ -1,8 +1,10 @@
-package main
+package ast
 
 import (
 	"fmt"
 	"strings"
+
+	"github.com/codecrafters-io/interpreter-starter-go/cmd/myinterpreter/lexer"
 )
 
 type Visitor interface {
@@ -15,14 +17,14 @@ type Visitor interface {
 	VisitInfixExpr(node InfixExpr)
 }
 
-type ASTNode interface {
+type Node interface {
 	Type() string
 	String() string
 	Accept(visitor Visitor)
 }
 
 type BooleanLiteral struct {
-	Token Token
+	Token lexer.Token
 	Value bool
 }
 
@@ -43,7 +45,7 @@ func (n NilLiteral) String() string         { return fmt.Sprintf("%s", "nil") }
 func (n NilLiteral) Accept(visitor Visitor) { visitor.VisitNil(n) }
 
 type NumLiteral struct {
-	Token Token
+	Token lexer.Token
 	Value float64
 }
 
@@ -56,7 +58,7 @@ func (n NumLiteral) String() string {
 func (n NumLiteral) Accept(visitor Visitor) { visitor.VisitNum(n) }
 
 type StringLiteral struct {
-	Token Token
+	Token lexer.Token
 	Value string
 }
 
@@ -65,8 +67,8 @@ func (n StringLiteral) String() string         { return fmt.Sprintf("%s", n.Valu
 func (n StringLiteral) Accept(visitor Visitor) { visitor.VisitString(n) }
 
 type GroupedExpr struct {
-	Token Token
-	Value ASTNode
+	Token lexer.Token
+	Value Node
 }
 
 func (n GroupedExpr) Type() string           { return "GROUPED_EXPR" }
@@ -74,9 +76,9 @@ func (n GroupedExpr) String() string         { return parenthesize("group", n.Va
 func (n GroupedExpr) Accept(visitor Visitor) { visitor.VisitGroupedExpr(n) }
 
 type PrefixExpr struct {
-	Token Token
+	Token lexer.Token
 	Op    string
-	Right ASTNode
+	Right Node
 }
 
 func (n PrefixExpr) Type() string           { return "PREFIX_EXPR" }
@@ -84,17 +86,17 @@ func (n PrefixExpr) String() string         { return parenthesize(n.Op, n.Right)
 func (n PrefixExpr) Accept(visitor Visitor) { visitor.VisitPrefixExpr(n) }
 
 type InfixExpr struct {
-	Token Token
-	Left  ASTNode
+	Token lexer.Token
+	Left  Node
 	Op    string
-	Right ASTNode
+	Right Node
 }
 
 func (n InfixExpr) Type() string           { return "INFIX_EXPR" }
 func (n InfixExpr) String() string         { return parenthesize(n.Op, n.Left, n.Right) }
 func (n InfixExpr) Accept(visitor Visitor) { visitor.VisitInfixExpr(n) }
 
-func parenthesize(op string, expr ...ASTNode) string {
+func parenthesize(op string, expr ...Node) string {
 	var sb strings.Builder
 	sb.WriteString("(")
 	sb.WriteString(op)
@@ -107,4 +109,16 @@ func parenthesize(op string, expr ...ASTNode) string {
 	sb.WriteString(")")
 
 	return sb.String()
+}
+func trailZeroes(s string) string {
+	if strings.Contains(s, ".") {
+		s = strings.TrimRight(s, "0")
+		s = strings.TrimRight(s, ".")
+	}
+
+	if !strings.Contains(s, ".") {
+		s += ".0"
+	}
+
+	return s
 }
