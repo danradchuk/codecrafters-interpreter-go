@@ -70,16 +70,34 @@ func (e Evaluator) VisitGroupedExpr(node ast.GroupedExpr) interface{} {
 	return &GroupedObject{Value: expr.(Object)}
 }
 func (e Evaluator) VisitPrefixExpr(node ast.PrefixExpr) interface{} {
-	//expr := node.Accept(e)
-	//if expr == nil {
-	//	panic("can't evaluate prefix expression")
-	//}
-	//
-	//switch node.Op {
-	//case "-":
-	//
-	//case "!":
-	//}
+	expr := node.Right.Accept(e)
+	if expr == nil {
+		panic("can't evaluate prefix expression")
+	}
+
+	switch node.Op {
+	case "-":
+		if expr, ok := expr.(*NumObject); ok {
+			return &NumObject{Value: -expr.Value}
+		}
+	case "!":
+		if _, ok := expr.(*NilObject); ok {
+			return &BooleanObject{Value: true}
+		}
+
+		if _, ok := expr.(*NumObject); ok {
+			return &BooleanObject{Value: false}
+		}
+
+		if expr, ok := expr.(*BooleanObject); ok {
+			switch expr.Value {
+			case true:
+				return &BooleanObject{Value: false}
+			case false:
+				return &BooleanObject{Value: true}
+			}
+		}
+	}
 
 	return nil
 }
