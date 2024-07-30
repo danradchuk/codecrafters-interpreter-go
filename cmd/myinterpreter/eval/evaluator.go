@@ -47,7 +47,7 @@ type GroupedObject struct {
 }
 
 func (o GroupedObject) String() string {
-	return fmt.Sprintf("%s", o.String())
+	return fmt.Sprintf("%s", o.Value.String())
 }
 
 type Evaluator struct {
@@ -66,7 +66,7 @@ func (e Evaluator) VisitString(node ast.StringLiteral) interface{} {
 	return &StrObject{Value: node.Value}
 }
 func (e Evaluator) VisitGroupedExpr(node ast.GroupedExpr) interface{} {
-	expr := node.Accept(e)
+	expr := node.Value.Accept(e)
 	return &GroupedObject{Value: expr.(Object)}
 }
 func (e Evaluator) VisitPrefixExpr(node ast.PrefixExpr) interface{} {
@@ -101,6 +101,6 @@ func trailZeroes(s string) string {
 		s = strings.TrimRight(s, "0")
 		s = strings.TrimRight(s, ".")
 	}
-	
+
 	return s
 }
