@@ -2,6 +2,7 @@ package eval
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/codecrafters-io/interpreter-starter-go/cmd/myinterpreter/ast"
 )
@@ -30,7 +31,7 @@ type NumObject struct {
 }
 
 func (o NumObject) String() string {
-	return fmt.Sprintf("%f", o.Value)
+	return trailZeroes(fmt.Sprintf("%f", o.Value))
 }
 
 type StrObject struct {
@@ -93,4 +94,13 @@ func (e Evaluator) Eval(tree ast.Node) Object {
 	}
 
 	return nil
+}
+
+func trailZeroes(s string) string {
+	if strings.Contains(s, ".") {
+		s = strings.TrimRight(s, "0")
+		s = strings.TrimRight(s, ".")
+	}
+	
+	return s
 }
