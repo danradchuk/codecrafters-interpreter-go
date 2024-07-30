@@ -8,6 +8,7 @@ import (
 )
 
 type Object interface {
+	Type() string
 	String() string
 }
 
@@ -15,6 +16,9 @@ type BooleanObject struct {
 	Value bool
 }
 
+func (o BooleanObject) Type() string {
+	return "BOOLEAN_OBJ"
+}
 func (o BooleanObject) String() string {
 	return fmt.Sprintf("%t", o.Value)
 }
@@ -22,6 +26,9 @@ func (o BooleanObject) String() string {
 type NilObject struct {
 }
 
+func (o NilObject) Type() string {
+	return "NIL_OBJ"
+}
 func (o NilObject) String() string {
 	return "nil"
 }
@@ -30,6 +37,9 @@ type NumObject struct {
 	Value float64
 }
 
+func (o NumObject) Type() string {
+	return "NUM_OBJ"
+}
 func (o NumObject) String() string {
 	return trailZeroes(fmt.Sprintf("%f", o.Value))
 }
@@ -38,19 +48,23 @@ type StrObject struct {
 	Value string
 }
 
+func (o StrObject) Type() string {
+	return "STRING_OBJ"
+}
 func (o StrObject) String() string {
 	return fmt.Sprintf("%s", o.Value)
 }
 
-type GroupedObject struct {
-	Value Object
-}
-
-func (o GroupedObject) String() string {
-	return fmt.Sprintf("%s", o.Value.String())
-}
-
 type Evaluator struct {
+}
+
+func (e Evaluator) Eval(tree ast.Node) Object {
+	expr := tree.Accept(e)
+	if t, ok := expr.(Object); ok == true {
+		return t
+	}
+
+	return nil
 }
 
 func (e Evaluator) VisitBoolean(n ast.BooleanLiteral) interface{} {
@@ -67,7 +81,7 @@ func (e Evaluator) VisitString(node ast.StringLiteral) interface{} {
 }
 func (e Evaluator) VisitGroupedExpr(node ast.GroupedExpr) interface{} {
 	expr := node.Value.Accept(e)
-	return &GroupedObject{Value: expr.(Object)}
+	return expr.(Object)
 }
 func (e Evaluator) VisitPrefixExpr(node ast.PrefixExpr) interface{} {
 	expr := node.Right.Accept(e)
@@ -102,13 +116,54 @@ func (e Evaluator) VisitPrefixExpr(node ast.PrefixExpr) interface{} {
 	return nil
 }
 func (e Evaluator) VisitInfixExpr(node ast.InfixExpr) interface{} {
-	return nil
-}
+	left := node.Left.Accept(e)
+	right := node.Right.Accept(e)
 
-func (e Evaluator) Eval(tree ast.Node) Object {
-	expr := tree.Accept(e)
-	if t, ok := expr.(Object); ok == true {
-		return t
+	// ops with numbers
+	if l, ok := left.(*NumObject); ok {
+		if r, ok := right.(*NumObject); ok {
+			switch node.Op {
+			case "+":
+				return &NumObject{Value: l.Value + r.Value}
+			case "-":
+				return &NumObject{Value: l.Value - r.Value}
+			case "*":
+				return &NumObject{Value: l.Value * r.Value}
+			case "/":
+				return &NumObject{Value: l.Value / r.Value}
+			case "<":
+				return &BooleanObject{Value: l.Value < r.Value}
+			case "<=":
+				return &BooleanObject{Value: l.Value <= r.Value}
+			case ">":
+				return &BooleanObject{Value: l.Value > r.Value}
+			case ">=":
+				return &BooleanObject{Value: l.Value >= r.Value}
+			case "==":
+				return &BooleanObject{Value: l.Value == r.Value}
+			case "!=":
+				return &BooleanObject{Value: l.Value != r.Value}
+			}
+		}
+
+		panic("type mismatch")
+	}
+
+	// string concatenation
+	if l, ok := left.(*StrObject); ok {
+		if r, ok := right.(*StrObject); ok {
+			return &StrObject{Value: l.Value + r.Value}
+		}
+
+		panic("type mismatch")
+	}
+
+	// test on equality for arbitrary objects
+	switch node.Op {
+	case "==":
+		return &BooleanObject{Value: left == right}
+	case "!=":
+		return &BooleanObject{Value: left != right}
 	}
 
 	return nil
