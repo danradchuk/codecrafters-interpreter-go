@@ -8,19 +8,19 @@ import (
 )
 
 type Visitor interface {
-	VisitBoolean(node BooleanLiteral)
-	VisitNil(node NilLiteral)
-	VisitNum(node NumLiteral)
-	VisitString(node StringLiteral)
-	VisitGroupedExpr(node GroupedExpr)
-	VisitPrefixExpr(node PrefixExpr)
-	VisitInfixExpr(node InfixExpr)
+	VisitBoolean(node BooleanLiteral) interface{}
+	VisitNil(node NilLiteral) interface{}
+	VisitNum(node NumLiteral) interface{}
+	VisitString(node StringLiteral) interface{}
+	VisitGroupedExpr(node GroupedExpr) interface{}
+	VisitPrefixExpr(node PrefixExpr) interface{}
+	VisitInfixExpr(node InfixExpr) interface{}
 }
 
 type Node interface {
 	Type() string
 	String() string
-	Accept(visitor Visitor)
+	Accept(visitor Visitor) interface{}
 }
 
 type BooleanLiteral struct {
@@ -34,15 +34,15 @@ func (n BooleanLiteral) Type() string {
 func (n BooleanLiteral) String() string {
 	return fmt.Sprintf("%t", n.Value)
 }
-func (n BooleanLiteral) Accept(visitor Visitor) { visitor.VisitBoolean(n) }
+func (n BooleanLiteral) Accept(visitor Visitor) interface{} { return visitor.VisitBoolean(n) }
 
 type NilLiteral struct{}
 
 func (n NilLiteral) Type() string {
 	return "NIL"
 }
-func (n NilLiteral) String() string         { return fmt.Sprintf("%s", "nil") }
-func (n NilLiteral) Accept(visitor Visitor) { visitor.VisitNil(n) }
+func (n NilLiteral) String() string                     { return fmt.Sprintf("%s", "nil") }
+func (n NilLiteral) Accept(visitor Visitor) interface{} { return visitor.VisitNil(n) }
 
 type NumLiteral struct {
 	Token lexer.Token
@@ -55,25 +55,25 @@ func (n NumLiteral) Type() string {
 func (n NumLiteral) String() string {
 	return trailZeroes(fmt.Sprintf("%f", n.Value))
 }
-func (n NumLiteral) Accept(visitor Visitor) { visitor.VisitNum(n) }
+func (n NumLiteral) Accept(visitor Visitor) interface{} { return visitor.VisitNum(n) }
 
 type StringLiteral struct {
 	Token lexer.Token
 	Value string
 }
 
-func (n StringLiteral) Type() string           { return "STRING" }
-func (n StringLiteral) String() string         { return fmt.Sprintf("%s", n.Value) }
-func (n StringLiteral) Accept(visitor Visitor) { visitor.VisitString(n) }
+func (n StringLiteral) Type() string                       { return "STRING" }
+func (n StringLiteral) String() string                     { return fmt.Sprintf("%s", n.Value) }
+func (n StringLiteral) Accept(visitor Visitor) interface{} { return visitor.VisitString(n) }
 
 type GroupedExpr struct {
 	Token lexer.Token
 	Value Node
 }
 
-func (n GroupedExpr) Type() string           { return "GROUPED_EXPR" }
-func (n GroupedExpr) String() string         { return parenthesize("group", n.Value) }
-func (n GroupedExpr) Accept(visitor Visitor) { visitor.VisitGroupedExpr(n) }
+func (n GroupedExpr) Type() string                       { return "GROUPED_EXPR" }
+func (n GroupedExpr) String() string                     { return parenthesize("group", n.Value) }
+func (n GroupedExpr) Accept(visitor Visitor) interface{} { return visitor.VisitGroupedExpr(n) }
 
 type PrefixExpr struct {
 	Token lexer.Token
@@ -81,9 +81,9 @@ type PrefixExpr struct {
 	Right Node
 }
 
-func (n PrefixExpr) Type() string           { return "PREFIX_EXPR" }
-func (n PrefixExpr) String() string         { return parenthesize(n.Op, n.Right) }
-func (n PrefixExpr) Accept(visitor Visitor) { visitor.VisitPrefixExpr(n) }
+func (n PrefixExpr) Type() string                       { return "PREFIX_EXPR" }
+func (n PrefixExpr) String() string                     { return parenthesize(n.Op, n.Right) }
+func (n PrefixExpr) Accept(visitor Visitor) interface{} { return visitor.VisitPrefixExpr(n) }
 
 type InfixExpr struct {
 	Token lexer.Token
@@ -92,9 +92,9 @@ type InfixExpr struct {
 	Right Node
 }
 
-func (n InfixExpr) Type() string           { return "INFIX_EXPR" }
-func (n InfixExpr) String() string         { return parenthesize(n.Op, n.Left, n.Right) }
-func (n InfixExpr) Accept(visitor Visitor) { visitor.VisitInfixExpr(n) }
+func (n InfixExpr) Type() string                       { return "INFIX_EXPR" }
+func (n InfixExpr) String() string                     { return parenthesize(n.Op, n.Left, n.Right) }
+func (n InfixExpr) Accept(visitor Visitor) interface{} { return visitor.VisitInfixExpr(n) }
 
 func parenthesize(op string, expr ...Node) string {
 	var sb strings.Builder

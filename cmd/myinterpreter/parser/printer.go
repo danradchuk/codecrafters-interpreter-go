@@ -23,26 +23,33 @@ func (v *ASTPrinter) Print(n ast.Node) error {
 	return nil
 }
 
-func (v *ASTPrinter) VisitBoolean(n ast.BooleanLiteral) {
+func (v *ASTPrinter) VisitBoolean(n ast.BooleanLiteral) interface{} {
 	v.write(n.String())
+	return nil
 }
-func (v *ASTPrinter) VisitNil(n ast.NilLiteral) {
+func (v *ASTPrinter) VisitNil(n ast.NilLiteral) interface{} {
 	v.write(n.String())
+	return nil
 }
-func (v *ASTPrinter) VisitNum(n ast.NumLiteral) {
+func (v *ASTPrinter) VisitNum(n ast.NumLiteral) interface{} {
 	v.write(n.String())
+	return nil
 }
-func (v *ASTPrinter) VisitString(n ast.StringLiteral) {
+func (v *ASTPrinter) VisitString(n ast.StringLiteral) interface{} {
 	v.write(n.String())
+	return nil
 }
-func (v *ASTPrinter) VisitGroupedExpr(n ast.GroupedExpr) {
+func (v *ASTPrinter) VisitGroupedExpr(n ast.GroupedExpr) interface{} {
 	v.write(n.String())
+	return nil
 }
-func (v *ASTPrinter) VisitPrefixExpr(n ast.PrefixExpr) {
+func (v *ASTPrinter) VisitPrefixExpr(n ast.PrefixExpr) interface{} {
 	v.write(n.String())
+	return nil
 }
-func (v *ASTPrinter) VisitInfixExpr(n ast.InfixExpr) {
+func (v *ASTPrinter) VisitInfixExpr(n ast.InfixExpr) interface{} {
 	v.write(n.String())
+	return nil
 }
 
 func (v *ASTPrinter) write(s string) {

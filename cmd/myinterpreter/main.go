@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/codecrafters-io/interpreter-starter-go/cmd/myinterpreter/eval"
 	"github.com/codecrafters-io/interpreter-starter-go/cmd/myinterpreter/lexer"
 	"github.com/codecrafters-io/interpreter-starter-go/cmd/myinterpreter/parser"
 )
@@ -15,7 +16,7 @@ func main() {
 	}
 
 	command := os.Args[1]
-	if command != "tokenize" && command != "parse" {
+	if command != "tokenize" && command != "parse" && command != "evaluate" {
 		_, _ = fmt.Fprintf(os.Stderr, "Unknown command: %s\n", command)
 		os.Exit(1)
 	}
@@ -49,5 +50,20 @@ func main() {
 
 		// Print
 		fmt.Println(ast.String())
+	} else if command == "evaluate" {
+		// Tokenize
+		l := lexer.NewLexer(fileContents)
+
+		// Parse
+		p := parser.NewParser(l)
+		ast := p.ParseExpr(parser.LOWEST)
+		if len(p.Errors) > 0 {
+			code := parser.CheckErrors(p.Errors)
+			os.Exit(code)
+		}
+
+		// Evaluate
+		e := eval.Evaluator{}
+		fmt.Println(e.Eval(ast))
 	}
 }
