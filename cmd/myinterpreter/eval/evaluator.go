@@ -2,6 +2,7 @@ package eval
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/codecrafters-io/interpreter-starter-go/cmd/myinterpreter/ast"
@@ -119,51 +120,86 @@ func (e Evaluator) VisitInfixExpr(node ast.InfixExpr) interface{} {
 	left := node.Left.Accept(e)
 	right := node.Right.Accept(e)
 
-	// ops with numbers
-	if l, ok := left.(*NumObject); ok {
-		if r, ok := right.(*NumObject); ok {
-			switch node.Op {
-			case "+":
-				return &NumObject{Value: l.Value + r.Value}
-			case "-":
-				return &NumObject{Value: l.Value - r.Value}
-			case "*":
-				return &NumObject{Value: l.Value * r.Value}
-			case "/":
-				return &NumObject{Value: l.Value / r.Value}
-			case "<":
-				return &BooleanObject{Value: l.Value < r.Value}
-			case "<=":
-				return &BooleanObject{Value: l.Value <= r.Value}
-			case ">":
-				return &BooleanObject{Value: l.Value > r.Value}
-			case ">=":
-				return &BooleanObject{Value: l.Value >= r.Value}
-			case "==":
-				return &BooleanObject{Value: l.Value == r.Value}
-			case "!=":
-				return &BooleanObject{Value: l.Value != r.Value}
-			}
-		}
-
-		panic("type mismatch")
-	}
-
-	// string concatenation
-	if l, ok := left.(*StrObject); ok {
-		if r, ok := right.(*StrObject); ok {
-			return &StrObject{Value: l.Value + r.Value}
-		}
-
-		panic("type mismatch")
-	}
-
-	// test on equality for arbitrary objects
 	switch node.Op {
+	case "+":
+		if l, ok := left.(*NumObject); ok {
+			if r, ok := right.(*NumObject); ok {
+				return &NumObject{Value: l.Value + r.Value}
+			}
+			panic("type mismatch for floats at +")
+		}
+
+		if l, ok := left.(*StrObject); ok {
+			if r, ok := right.(*StrObject); ok {
+				return &StrObject{Value: l.Value + r.Value}
+			}
+			panic("type mismatch for strings at +")
+		}
+	case "-":
+		if l, ok := left.(*NumObject); ok {
+			if r, ok := right.(*NumObject); ok {
+				return &NumObject{Value: l.Value - r.Value}
+			}
+			panic("type mismatch at -")
+		}
+	case "*":
+		if l, ok := left.(*NumObject); ok {
+			if r, ok := right.(*NumObject); ok {
+				return &NumObject{Value: l.Value * r.Value}
+			}
+			panic("type mismatch at *")
+		}
+	case "/":
+		if l, ok := left.(*NumObject); ok {
+			if r, ok := right.(*NumObject); ok {
+				return &NumObject{Value: l.Value / r.Value}
+			}
+			panic("type mismatch at /")
+		}
+	case "<":
+		if l, ok := left.(*NumObject); ok {
+			if r, ok := right.(*NumObject); ok {
+				return &BooleanObject{Value: l.Value < r.Value}
+			}
+			panic("type mismatch at <")
+		}
+	case "<=":
+		if l, ok := left.(*NumObject); ok {
+			if r, ok := right.(*NumObject); ok {
+				return &BooleanObject{Value: l.Value <= r.Value}
+			}
+			panic("type mismatch at <=")
+		}
+	case ">":
+		if l, ok := left.(*NumObject); ok {
+			if r, ok := right.(*NumObject); ok {
+				return &BooleanObject{Value: l.Value > r.Value}
+			}
+			panic("type mismatch at >")
+		}
+	case ">=":
+		if l, ok := left.(*NumObject); ok {
+			if r, ok := right.(*NumObject); ok {
+				return &BooleanObject{Value: l.Value >= r.Value}
+			}
+			panic("type mismatch at >")
+		}
 	case "==":
-		return &BooleanObject{Value: left == right}
+		if left == nil && right == nil {
+			return &BooleanObject{Value: true}
+		} else if left == nil {
+			return &BooleanObject{Value: false}
+		}
+
+		return &BooleanObject{Value: reflect.DeepEqual(left, right)}
 	case "!=":
-		return &BooleanObject{Value: left != right}
+		if left == nil && right == nil {
+			return &BooleanObject{Value: false}
+		} else if left == nil {
+			return &BooleanObject{Value: true}
+		}
+
+		return &BooleanObject{Value: !reflect.DeepEqual(left, right)}
 	}
 
 	return nil
