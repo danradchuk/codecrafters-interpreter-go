@@ -145,50 +145,50 @@ func (e *Evaluator) VisitInfixExpr(node ast.InfixExpr) interface{} {
 			if r, ok := right.(*NumObject); ok {
 				return &NumObject{Value: l.Value - r.Value}
 			}
-			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
+		e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 	case "*":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &NumObject{Value: l.Value * r.Value}
 			}
-			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
+		e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 	case "/":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &NumObject{Value: l.Value / r.Value}
 			}
-			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
+		e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 	case "<":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &BooleanObject{Value: l.Value < r.Value}
 			}
-			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
+		e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 	case "<=":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &BooleanObject{Value: l.Value <= r.Value}
 			}
-			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
+		e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 	case ">":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &BooleanObject{Value: l.Value > r.Value}
 			}
-			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
+		e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 	case ">=":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &BooleanObject{Value: l.Value >= r.Value}
 			}
-			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
+		e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 	case "==":
 		if left == nil && right == nil {
 			return &BooleanObject{Value: true}
