@@ -64,6 +64,13 @@ func main() {
 
 		// Evaluate
 		e := eval.Evaluator{}
-		fmt.Println(e.Eval(ast))
+		obj := e.Eval(ast)
+		if len(e.Errors) > 0 {
+			code := eval.CheckErrors(e.Errors)
+			os.Exit(code)
+		}
+
+		// Print
+		fmt.Println(obj)
 	}
 }

@@ -1,7 +1,9 @@
 package eval
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 
@@ -57,9 +59,10 @@ func (o StrObject) String() string {
 }
 
 type Evaluator struct {
+	Errors []error
 }
 
-func (e Evaluator) Eval(tree ast.Node) Object {
+func (e *Evaluator) Eval(tree ast.Node) Object {
 	expr := tree.Accept(e)
 	if t, ok := expr.(Object); ok == true {
 		return t
@@ -68,23 +71,23 @@ func (e Evaluator) Eval(tree ast.Node) Object {
 	return nil
 }
 
-func (e Evaluator) VisitBoolean(n ast.BooleanLiteral) interface{} {
+func (e *Evaluator) VisitBoolean(n ast.BooleanLiteral) interface{} {
 	return &BooleanObject{Value: n.Value}
 }
-func (e Evaluator) VisitNil(_ ast.NilLiteral) interface{} {
+func (e *Evaluator) VisitNil(_ ast.NilLiteral) interface{} {
 	return &NilObject{}
 }
-func (e Evaluator) VisitNum(node ast.NumLiteral) interface{} {
+func (e *Evaluator) VisitNum(node ast.NumLiteral) interface{} {
 	return &NumObject{Value: node.Value}
 }
-func (e Evaluator) VisitString(node ast.StringLiteral) interface{} {
+func (e *Evaluator) VisitString(node ast.StringLiteral) interface{} {
 	return &StrObject{Value: node.Value}
 }
-func (e Evaluator) VisitGroupedExpr(node ast.GroupedExpr) interface{} {
+func (e *Evaluator) VisitGroupedExpr(node ast.GroupedExpr) interface{} {
 	expr := node.Value.Accept(e)
 	return expr.(Object)
 }
-func (e Evaluator) VisitPrefixExpr(node ast.PrefixExpr) interface{} {
+func (e *Evaluator) VisitPrefixExpr(node ast.PrefixExpr) interface{} {
 	expr := node.Right.Accept(e)
 	if expr == nil {
 		panic("can't evaluate prefix expression")
@@ -94,6 +97,8 @@ func (e Evaluator) VisitPrefixExpr(node ast.PrefixExpr) interface{} {
 	case "-":
 		if expr, ok := expr.(*NumObject); ok {
 			return &NumObject{Value: -expr.Value}
+		} else {
+			e.Errors = append(e.Errors, errors.New("Operand must be a number."))
 		}
 	case "!":
 		if _, ok := expr.(*NilObject); ok {
@@ -116,7 +121,7 @@ func (e Evaluator) VisitPrefixExpr(node ast.PrefixExpr) interface{} {
 
 	return nil
 }
-func (e Evaluator) VisitInfixExpr(node ast.InfixExpr) interface{} {
+func (e *Evaluator) VisitInfixExpr(node ast.InfixExpr) interface{} {
 	left := node.Left.Accept(e)
 	right := node.Right.Accept(e)
 
@@ -126,63 +131,63 @@ func (e Evaluator) VisitInfixExpr(node ast.InfixExpr) interface{} {
 			if r, ok := right.(*NumObject); ok {
 				return &NumObject{Value: l.Value + r.Value}
 			}
-			panic("type mismatch for floats at +")
+			e.Errors = append(e.Errors, errors.New("Operands must be two numbers or two strings."))
 		}
 
 		if l, ok := left.(*StrObject); ok {
 			if r, ok := right.(*StrObject); ok {
 				return &StrObject{Value: l.Value + r.Value}
 			}
-			panic("type mismatch for strings at +")
+			e.Errors = append(e.Errors, errors.New("Operands must be two numbers or two strings."))
 		}
 	case "-":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &NumObject{Value: l.Value - r.Value}
 			}
-			panic("type mismatch at -")
+			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
 	case "*":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &NumObject{Value: l.Value * r.Value}
 			}
-			panic("type mismatch at *")
+			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
 	case "/":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &NumObject{Value: l.Value / r.Value}
 			}
-			panic("type mismatch at /")
+			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
 	case "<":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &BooleanObject{Value: l.Value < r.Value}
 			}
-			panic("type mismatch at <")
+			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
 	case "<=":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &BooleanObject{Value: l.Value <= r.Value}
 			}
-			panic("type mismatch at <=")
+			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
 	case ">":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &BooleanObject{Value: l.Value > r.Value}
 			}
-			panic("type mismatch at >")
+			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
 	case ">=":
 		if l, ok := left.(*NumObject); ok {
 			if r, ok := right.(*NumObject); ok {
 				return &BooleanObject{Value: l.Value >= r.Value}
 			}
-			panic("type mismatch at >")
+			e.Errors = append(e.Errors, errors.New("Operands must be numbers."))
 		}
 	case "==":
 		if left == nil && right == nil {
@@ -212,4 +217,12 @@ func trailZeroes(s string) string {
 	}
 
 	return s
+}
+
+func CheckErrors(errs []error) int {
+	for _, err := range errs {
+		_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+
+	return 70
 }
